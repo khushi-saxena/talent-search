@@ -27,7 +27,7 @@ check:
 	node --env-file=.env.local --import tsx scripts/check.ts
 
 eval:
-	node --env-file=.env.local --import tsx scripts/eval.ts
+	node --conditions=react-server --env-file=.env.local --import tsx scripts/eval.ts $(FILE)
 
 stop:
 	npx supabase stop
