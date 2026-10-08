@@ -87,6 +87,8 @@ function subEvent(id: string, type: string, created: number, company: string, st
 async function main() {
   const db = new Client({ connectionString: process.env.SUPABASE_DB_URL });
   await db.connect();
+  const { rows: startRows } = await db.query("select now() as t");
+  const started = startRows[0].t;
   await db.query("update companies set plan = 'free', searches_used = 0");
   await db.query("delete from subscriptions; delete from stripe_events");
 
@@ -149,10 +151,12 @@ async function main() {
 
   console.log("isolation via Supabase directly (globex token)");
   const g = rest(G);
-  for (const t of ["shortlists", "shortlist_people", "saved_briefs", "searches"]) {
+  for (const t of ["shortlists", "saved_briefs", "searches"]) {
     const r = await g("GET", `/${t}?select=*`);
-    ok(Array.isArray(r.body) && r.body.length === 0, `select ${t} -> nothing`);
+    ok(Array.isArray(r.body) && r.body.every((x: any) => x.company_id === "globex"), `select ${t} -> only globex rows`);
   }
+  const sp = await g("GET", `/shortlist_people?select=*&shortlist_id=eq.${slId}`);
+  ok(Array.isArray(sp.body) && sp.body.length === 0, "select acme's shortlist_people -> nothing");
   ok(((await g("PATCH", `/shortlists?id=eq.${slId}`, { name: "pwned" })).body ?? []).length === 0, "update acme shortlist -> 0 rows");
   ok(((await g("DELETE", `/shortlists?id=eq.${slId}`)).body ?? []).length === 0, "delete acme shortlist -> 0 rows");
   ok(((await g("DELETE", `/saved_briefs?id=eq.${sb.body.id}`)).body ?? []).length === 0, "delete acme saved search -> 0 rows");
@@ -209,6 +213,10 @@ async function main() {
   const { rows } = await db.query("select count(*)::int n from candidates");
   ok(rows[0].n === 5000, "candidates intact");
 
+  // leave the app as we found it: drop everything this run created
+  for (const t of ["shortlists", "saved_briefs", "searches"]) {
+    await db.query(`delete from ${t} where created_at >= $1`, [started]);
+  }
   await db.query("update companies set plan = 'free', searches_used = 0");
   await db.query("delete from subscriptions; delete from stripe_events");
   await db.end();

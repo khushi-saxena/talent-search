@@ -23,7 +23,7 @@ export function PersonRow({ person, highlight = [], action }: { person: Card; hi
           {person.open_to_work && <span className="rounded-full bg-go-soft px-2 py-px text-[11px] font-semibold text-go">Open to work</span>}
         </div>
         <p className="mt-0.5 text-sm text-muted md:flex md:items-center md:gap-1.5">
-          <span className="block truncate md:inline">{person.current_title}</span>
+          <span className="block md:inline md:truncate">{person.current_title}</span>
           {person.current_company && (
             <span className="flex min-w-0 items-center gap-1.5">
               <span className="hidden text-faint md:inline">at</span>
@@ -49,14 +49,7 @@ export function PersonRow({ person, highlight = [], action }: { person: Card; hi
       </div>
       <div className="flex shrink-0 items-center gap-1">
         {action ?? (
-          <>
-            <span className="md:hidden">
-              <ShortlistButton personId={person.id} compact />
-            </span>
-            <span className="hidden md:block">
-              <ShortlistButton personId={person.id} />
-            </span>
-          </>
+<ShortlistButton personId={person.id} />
         )}
       </div>
     </li>
