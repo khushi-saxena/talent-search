@@ -34,6 +34,8 @@ export const isUuid = (s: string) => UUID.test(s);
 
 export function dbError(e: { code?: string; message?: string } | null) {
   if (!e) return fail(500, "Something went wrong");
+  // valid token but no recruiter row (e.g. the user was deleted): make them sign in again
+  if (e.code === "PGRST116") return fail(401, "Your session has ended. Sign in again.");
   if (e.code === "42501") return fail(403, "Not allowed");
   if (e.code === "23503") return fail(404, "Not found");
   if (e.code === "23514" || e.code === "22P02") return fail(400, "Invalid input");
