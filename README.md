@@ -28,7 +28,7 @@ Needs Node 24, Docker and `GEMINI_API_KEY` (in your environment or `.env.local`)
 `gemini-3.5-flash-lite`, structured JSON output, temperature 0, minimal thinking. Turning a brief into filters is classification over a small, fixed vocabulary, so the fastest tier is enough, and it keeps a search well under the 3-second budget. Measured on the example briefs: ~770 input and ~150 output tokens, about **$0.0006 per search** at $0.30 / $2.50 per million, and ~1.2s typical latency. A few calls stall past 4s, so if the model hasn't answered in 2s a second identical request goes out and the first answer wins. That costs one extra call on slow searches and caps the tail near 3s. Repeated briefs are served from an in-memory cache. Override with `GEMINI_MODEL`.
 
 ## Results
-`make eval`: 10/10 example briefs exactly right (100% precision and recall). On 20 harder briefs I wrote (synonyms, states, years, vague, unanswerable, injection): EXTRA_TBD.
+`make eval`: 10/10 example briefs exactly right (100% precision and recall). On 20 harder briefs I wrote (synonyms, states, years, vague, unanswerable, injection): 20/20 exactly right. Average model time ~1.4s, ~770 tokens in and ~150 out.
 
 ## Tradeoffs
 - Hard filters only, so the result is either exactly right or empty. That's good for precision on structured data, but a near-miss (9 years when asked for 10+) is never shown.
