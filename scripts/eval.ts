@@ -11,6 +11,20 @@ type Q = { brief: string; expected_ids: string[] };
 const file = process.argv[2] ?? new URL("../data/queries.json", import.meta.url).pathname;
 const queries: Q[] = JSON.parse(readFileSync(file, "utf8"));
 
+// the free tier allows 15 requests a minute; wait it out instead of failing
+async function withRateLimit<T>(fn: () => Promise<T>): Promise<[T, number]> {
+  for (let i = 0; ; i++) {
+    const t0 = Date.now();
+    try {
+      return [await fn(), Date.now() - t0];
+    } catch (e) {
+      if ((e as { status?: number }).status !== 429 || i >= 3) throw e;
+      console.log("    rate limited, waiting 45s");
+      await new Promise((r) => setTimeout(r, 45_000));
+    }
+  }
+}
+
 const pct = (n: number) => `${(n * 100).toFixed(0)}%`.padStart(4);
 
 async function main() {
@@ -24,9 +38,7 @@ async function main() {
   let tokOut = 0;
 
   for (const q of queries) {
-    const t0 = Date.now();
-    const { filters } = await briefToFilters(q.brief);
-    const ms = Date.now() - t0;
+    const [{ filters }, ms] = await withRateLimit(() => briefToFilters(q.brief));
     sumMs += ms;
     tokIn += lastUsage.prompt ?? 0;
     tokOut += lastUsage.output ?? 0;

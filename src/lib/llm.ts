@@ -98,7 +98,7 @@ async function ask(brief: string, thinking: boolean) {
 
 // some models don't take a thinking level, so fall back once without it
 let thinkingOk = true;
-async function callModel(brief: string) {
+async function callOnce(brief: string) {
   if (thinkingOk) {
     try {
       return await ask(brief, true);
@@ -108,6 +108,31 @@ async function callModel(brief: string) {
     }
   }
   return ask(brief, false);
+}
+
+// Most calls take ~1.2s but a few stall past 4s. If the first hasn't answered
+// by HEDGE_MS, send a second and take whichever lands first.
+const HEDGE_MS = Number(process.env.GEMINI_HEDGE_MS) || 2000;
+
+function callModel(brief: string) {
+  return new Promise<Awaited<ReturnType<typeof ask>>>((resolve, reject) => {
+    let started = 1;
+    let failures = 0;
+    const done = (r: Awaited<ReturnType<typeof ask>>) => {
+      clearTimeout(timer);
+      resolve(r);
+    };
+    const fail = (e: unknown) => {
+      if (++failures < started) return;
+      clearTimeout(timer);
+      reject(e);
+    };
+    const timer = setTimeout(() => {
+      started++;
+      callOnce(brief).then(done, fail);
+    }, HEDGE_MS);
+    callOnce(brief).then(done, fail);
+  });
 }
 
 export let lastUsage: { prompt?: number; output?: number } = {};
