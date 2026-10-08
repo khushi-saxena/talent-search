@@ -145,7 +145,7 @@ function Search() {
         {!result && !pending && (
           <h1 className="mb-5 text-[28px] leading-tight font-semibold tracking-tight md:text-[40px]">Who are you looking for?</h1>
         )}
-        <div className="relative rounded-2xl border border-line bg-surface shadow-sm transition-colors focus-within:border-ink/40">
+        <div className="relative rounded-2xl border border-line bg-surface shadow-sm transition-[border-color,box-shadow] focus-within:border-ink/50 focus-within:shadow-[0_0_0_3px_rgba(26,29,27,0.08)]">
           <label htmlFor="brief" className="sr-only">
             Describe who you're looking for
           </label>
