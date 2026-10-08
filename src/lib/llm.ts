@@ -60,6 +60,8 @@ Rules:
 - Only add a filter the brief clearly asks for. Never add a filter to be helpful, and never broaden one.
 - A technology or skill used as a noun ("React engineers", "Python developers", "Kubernetes folks") is a required skill, not a role. Do not add a role in that case.
 - A job type ("backend engineers", "product designers", "account executives", "data scientists") is a role. Close synonyms are fine: frontend developer -> Frontend Engineer, designer/UX designer -> Product Designer, AE/salesperson -> Account Executive, ML engineer -> Machine Learning Engineer, SRE/infrastructure/platform engineer -> DevOps Engineer, iOS/Android engineer -> Mobile Engineer, recruiter/talent partner -> Recruiter, PM -> Product Manager.
+- Plain "engineers" or "developers" with no type and no skill in front means every role with Engineer in its name.
+- If nothing concrete is left once praise and filler are ignored ("great engineers", "top talent", "the best people"), the brief is too vague: put "too vague" in unsupported.
 - "X experience" or "who know X" where X is in the skill list is a required skill ("enterprise sales experience" -> Enterprise Sales).
 - Seniority words map literally: junior/entry-level/new grad -> junior, mid-level -> mid, senior -> senior, staff/principal/lead -> staff. Do not translate seniority into years, or years into seniority.
 - "N+ years" -> min_years N. "more than N years" -> min_years N+1. "less than N years" -> max_years N-1.
