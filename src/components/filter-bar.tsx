@@ -40,8 +40,10 @@ export function FilterBar({
   return (
     <div>
       <ul className="flex flex-wrap items-center gap-x-1.5 gap-y-2" aria-label="Filters">
-        {chips.map((c) => (
-          <li key={`${c.kind}:${c.value ?? ""}`}>
+        {chips.map((c, i) => (
+          <li key={`${c.kind}:${c.value ?? ""}`} className="flex items-center gap-x-1.5">
+            {/* values of one kind are alternatives, except required skills */}
+            {i > 0 && chips[i - 1].kind === c.kind && c.kind !== "skills" && <span className="text-[13px] text-muted">or</span>}
             <Mark chip={c} readOnly={readOnly || busy} onEdit={() => setEditing(c.kind)} onRemove={() => apply(removeChip(filters, c))} />
           </li>
         ))}
