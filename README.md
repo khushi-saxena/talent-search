@@ -6,10 +6,10 @@ make dev     # builds and serves http://localhost:3000
 make check   # end-to-end checks: isolation, free plan races, paging, billing, hostile input
 make eval    # scores search against data/queries.json (FILE=data/extra-queries.json for more)
 ```
-Needs Node 24, Docker, `ANTHROPIC_API_KEY`. `STRIPE_WEBHOOK_SECRET` defaults to the sample secret in `.env.local`; your environment overrides it.
+Needs Node 24, Docker and `GEMINI_API_KEY` (in your environment or `.env.local`). `STRIPE_WEBHOOK_SECRET` defaults to the sample secret in `.env.local`; your environment overrides it.
 
 ## How search works
-1. `POST /api/search` sends the brief to the model with one forced tool call, `set_filters`. Every list in the tool schema is an enum built from the data (`scripts/vocab.mjs`), so the model can only pick roles, skills, cities, schools and so on that exist.
+1. `POST /api/search` sends the brief to Gemini with a forced JSON response schema. Every list in the schema is an enum built from the data (`scripts/vocab.mjs`), so the model can only pick roles, skills, cities, schools and so on that exist.
 2. `normalizeFilters` checks the output again. Any value that isn't in the data becomes **unsupported** rather than being dropped, so a filter can never quietly widen.
 3. `create_search` (Postgres) charges the plan, runs `match_candidates`, and stores the ordered result ids on the search row in one transaction. Paging is then a slice of that array: one indexed read, stable order, each person exactly once, and it never touches the quota.
 4. Ranking: everyone returned matches every hard filter, so order only breaks ties: nice-to-have skills, then open to work, then years of experience.
@@ -17,7 +17,7 @@ Needs Node 24, Docker, `ANTHROPIC_API_KEY`. `STRIPE_WEBHOOK_SECRET` defaults to 
 ## Keeping the model honest
 - The data can't answer everything (languages, remote, a city we don't have). The model has to list those parts under `unsupported`, and then **we return nobody** and show the recruiter which part we couldn't search on, with a one-click remove. A brief that's only praise ("great engineers") gets the same treatment.
 - The prompt is literal: no added filters, seniority words map to seniority (not years), and "React engineers" is a skill, not a role. In the example set, treating it as a role misses 15 of the 21 right people.
-- Hostile briefs: the brief is wrapped as data, output is schema-forced and re-validated, and filters only ever reach SQL as bind values in a static query. Requests to "return everyone" end up in `unsupported`, so they return nothing.
+- Hostile briefs: the brief is wrapped as data, the output is forced to the schema and re-validated, and filters only ever reach SQL as bind values in a static query. Requests to "return everyone" end up in `unsupported`, so they return nothing.
 
 ## Tenancy, security, billing
 - API routes use the recruiter's own token against Supabase, so **RLS is the enforcement**, not route code. `company_id` is set by a trigger from the token, and plan, usage, billing and search rows are read-only for recruiters. All functions are revoked from `public` and granted one by one. The secret key is used only by the webhook and is never `NEXT_PUBLIC_`.
@@ -25,7 +25,7 @@ Needs Node 24, Docker, `ANTHROPIC_API_KEY`. `STRIPE_WEBHOOK_SECRET` defaults to 
 - Stripe: the signature is verified on the raw body with the official library. Events are deduped by `event.id`, then the subscription row only moves forward on `event.created` (a cancellation wins a tie). Plan = any `active` subscription. I don't reject old signature timestamps, because dedupe plus ordering already makes replays harmless and the sample events are older than Stripe's 5-minute default.
 
 ## Model
-`claude-haiku-5-5`, forced tool use, temperature 0. This is a classification problem over a small fixed vocabulary, so the fastest tier is enough, and it keeps a search well under the 3-second budget. Cost per search: about COST_TBD (≈TOKENS_TBD input tokens, mostly the vocabulary, and ~100 output). Repeated briefs are served from an in-memory cache.
+`gemini-3.5-flash-lite`, structured JSON output, temperature 0, minimal thinking. Turning a brief into filters is classification over a small, fixed vocabulary, so the fastest tier is enough, and it keeps a search well under the 3-second budget. Cost per search: about COST_TBD (≈TOKENS_TBD input tokens, mostly the vocabulary enums, and ~OUT_TBD output) at $0.30 / $2.50 per million tokens. Repeated briefs are served from an in-memory cache. Override with `GEMINI_MODEL`.
 
 ## Tradeoffs
 - Hard filters only, so the result is either exactly right or empty. That's good for precision on structured data, but a near-miss (9 years when asked for 10+) is never shown.

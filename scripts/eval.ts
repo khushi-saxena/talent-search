@@ -1,10 +1,10 @@
 // Scores the brief -> filters -> Postgres pipeline against data/queries.json.
-//   make eval            (needs ANTHROPIC_API_KEY)
+//   make eval            (needs GEMINI_API_KEY and make setup)
 //   make eval FILE=...   (any file in the same format)
 import { readFileSync } from "node:fs";
 import { Client } from "pg";
 import { hasConstraints } from "../src/lib/filters";
-import { briefToFilters, MODEL } from "../src/lib/llm";
+import { briefToFilters, lastUsage, MODEL } from "../src/lib/llm";
 
 type Q = { brief: string; expected_ids: string[] };
 
@@ -20,12 +20,16 @@ async function main() {
   let sumR = 0;
   let sumTop = 0;
   let sumMs = 0;
+  let tokIn = 0;
+  let tokOut = 0;
 
   for (const q of queries) {
     const t0 = Date.now();
     const { filters } = await briefToFilters(q.brief);
     const ms = Date.now() - t0;
     sumMs += ms;
+    tokIn += lastUsage.prompt ?? 0;
+    tokOut += lastUsage.output ?? 0;
 
     let ids: string[] = [];
     if (!filters.unsupported.length && hasConstraints(filters)) {
@@ -56,7 +60,7 @@ async function main() {
 
   const n = queries.length;
   console.log(
-    `\n${MODEL}: precision ${pct(sumP / n)}, recall ${pct(sumR / n)}, first page ${pct(sumTop / n)}, avg model time ${Math.round(sumMs / n)}ms`,
+    `\n${MODEL}: precision ${pct(sumP / n)}, recall ${pct(sumR / n)}, first page ${pct(sumTop / n)}, avg model time ${Math.round(sumMs / n)}ms, avg tokens ${Math.round(tokIn / n)} in / ${Math.round(tokOut / n)} out`,
   );
   await db.end();
 }
