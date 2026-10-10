@@ -12,13 +12,15 @@ const file = process.argv[2] ?? new URL("../data/queries.json", import.meta.url)
 const queries: Q[] = JSON.parse(readFileSync(file, "utf8"));
 
 // the free tier allows 15 requests a minute; wait it out instead of failing
+// (a stalled call that hits the timeout counts too)
 async function withRateLimit<T>(fn: () => Promise<T>): Promise<[T, number]> {
   for (let i = 0; ; i++) {
     const t0 = Date.now();
     try {
       return [await fn(), Date.now() - t0];
     } catch (e) {
-      if ((e as { status?: number }).status !== 429 || i >= 3) throw e;
+      const limited = (e as { status?: number }).status === 429 || (e as Error).name === "AbortError";
+      if (!limited || i >= 3) throw e;
       console.log("    rate limited, waiting 45s");
       await new Promise((r) => setTimeout(r, 45_000));
     }

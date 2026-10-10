@@ -26,8 +26,9 @@ db-reset:
 check:
 	node --env-file=.env.local --import tsx scripts/check.ts
 
+# hedging off here: it doubles calls and burns the free-tier rate limit
 eval:
-	node --conditions=react-server --env-file=.env.local --import tsx scripts/eval.ts $(FILE)
+	GEMINI_HEDGE_MS=600000 node --conditions=react-server --env-file=.env.local --import tsx scripts/eval.ts $(FILE)
 
 stop:
 	npx supabase stop
