@@ -29,5 +29,5 @@ export async function POST(req: Request) {
   // company_id is set by a trigger from the token, never from the request
   const { data, error } = await ctx.db.from("shortlists").insert({ name }).select("id").single();
   if (error) return dbError(error);
-  return json({ id: data.id }, 201);
+  return json({ id: data.id });
 }

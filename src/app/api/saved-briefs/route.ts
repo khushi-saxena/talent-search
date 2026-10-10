@@ -35,5 +35,5 @@ export async function POST(req: Request) {
     .select("id, brief, filters, created_at")
     .single();
   if (error) return dbError(error);
-  return json(data, 201);
+  return json(data);
 }

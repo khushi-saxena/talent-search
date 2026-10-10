@@ -130,7 +130,7 @@ async function main() {
 
   console.log("shortlists + saved searches (acme)");
   const sl = await acme("POST", "/api/shortlists", { name: "Acme secret list" });
-  ok(sl.status === 201 && sl.body.id, "create shortlist");
+  ok(sl.status === 200 && sl.body.id, "create shortlist");
   const slId = sl.body.id;
   ok((await acme("POST", `/api/shortlists/${slId}/people/cand_0001`)).status === 200, "add person");
   ok((await acme("POST", `/api/shortlists/${slId}/people/cand_0001`)).status === 200, "add again is fine");
@@ -138,7 +138,7 @@ async function main() {
   ok(lists.body.find((l: any) => l.id === slId)?.person_ids.length === 1, "still one person on the list");
   ok((await acme("POST", `/api/shortlists/${slId}/people/cand_nope`)).status === 404, "unknown person -> 404");
   const sb = await acme("POST", "/api/saved-briefs", { brief, filters });
-  ok(sb.status === 201, "save a search");
+  ok(sb.status === 200, "save a search");
 
   console.log("isolation via API (globex attacking acme)");
   ok(!(await globex("GET", "/api/shortlists")).body.some((l: any) => l.id === slId), "can't list acme's shortlists");
