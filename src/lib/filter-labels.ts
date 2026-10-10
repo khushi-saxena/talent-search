@@ -14,7 +14,10 @@ export type Kind =
   | "open_to_work"
   | "years"
   | "worked_at_company_type"
-  | "current_company_type";
+  | "current_company_type"
+  | "never_worked_at_company_type"
+  | "excluded_skills"
+  | "excluded_companies";
 
 export const KINDS: { kind: Kind; label: string }[] = [
   { kind: "roles", label: "Role" },
@@ -26,8 +29,11 @@ export const KINDS: { kind: Kind; label: string }[] = [
   { kind: "open_to_work", label: "Open to work" },
   { kind: "worked_at_company_type", label: "Has worked at" },
   { kind: "current_company_type", label: "Works at now" },
+  { kind: "never_worked_at_company_type", label: "Has never worked at" },
+  { kind: "excluded_skills", label: "Skills to exclude" },
   { kind: "companies", label: "Past or current company" },
   { kind: "current_companies", label: "Current company" },
+  { kind: "excluded_companies", label: "Companies to exclude" },
   { kind: "schools", label: "School" },
   { kind: "degrees", label: "Degree" },
   { kind: "fields", label: "Field of study" },
@@ -65,7 +71,11 @@ export function chipsFor(f: Filters): Chip[] {
   if (f.open_to_work !== null) chips.push({ kind: "open_to_work", label: f.open_to_work ? "Open to work" : "Not open to work" });
   if (f.worked_at_company_type) chips.push({ kind: "worked_at_company_type", label: `Has worked at ${article(f.worked_at_company_type)}` });
   if (f.current_company_type) chips.push({ kind: "current_company_type", label: `Works at ${article(f.current_company_type)} now` });
+  if (f.never_worked_at_company_type)
+    chips.push({ kind: "never_worked_at_company_type", label: `Never at ${article(f.never_worked_at_company_type)}` });
+  each("excluded_skills", f.excluded_skills, (v) => `No ${v}`);
   each("companies", f.companies, (v) => `Has worked at ${v}`);
+  each("excluded_companies", f.excluded_companies, (v) => `Never at ${v}`);
   each("current_companies", f.current_companies, (v) => `Works at ${v} now`);
   each("degrees", f.degrees, (v) => `Has ${article(v)}`);
   each("fields", f.fields, (v) => `Studied ${v}`);
@@ -79,7 +89,12 @@ export function removeChip(f: Filters, chip: Chip): Filters {
     next.min_years = null;
     next.max_years = null;
   } else if (chip.kind === "open_to_work") next.open_to_work = null;
-  else if (chip.kind === "worked_at_company_type" || chip.kind === "current_company_type") next[chip.kind] = null;
+  else if (
+    chip.kind === "worked_at_company_type" ||
+    chip.kind === "current_company_type" ||
+    chip.kind === "never_worked_at_company_type"
+  )
+    next[chip.kind] = null;
   else next[chip.kind] = next[chip.kind].filter((v) => v !== chip.value);
   return next;
 }

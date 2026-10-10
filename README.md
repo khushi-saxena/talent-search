@@ -4,7 +4,7 @@
 make setup   # npm ci, local Supabase, migrations, 5,000 candidates, two recruiter logins
 make dev     # builds and serves http://localhost:3000
 make check   # end-to-end checks: isolation, free plan races, paging, billing, hostile input
-make eval    # scores search against data/queries.json (FILE=data/extra-queries.json for 20 harder briefs)
+make eval    # scores search against data/queries.json (FILE=data/extra-queries.json or data/hard-queries.json for harder briefs)
 ```
 Needs Node 24, Docker and `GEMINI_API_KEY` (in your environment or `.env.local`). `STRIPE_WEBHOOK_SECRET` defaults to the sample secret in `.env.local`; your environment overrides it.
 
@@ -16,6 +16,7 @@ Needs Node 24, Docker and `GEMINI_API_KEY` (in your environment or `.env.local`)
 
 ## Keeping the model honest
 - The data can't answer everything (languages, remote, a city we don't have). The model has to list those parts under `unsupported`, and then **we return nobody** and show the recruiter which part we couldn't search on, with a one-click remove. A brief that's only praise ("great engineers") gets the same treatment.
+- Negations the data can answer are real filters, not unsupported: "never worked at a startup", "doesn't know Java", "never at Globalcorp". An excluded value that isn't in the data is a no-op, so it can't empty the results.
 - The prompt is literal: no added filters, seniority words map to seniority (not years), and "React engineers" is a skill, not a role. In the example set, treating it as a role misses 15 of the 21 right people.
 - Hostile briefs: the brief is wrapped as data, the output is forced to the schema and re-validated, and filters only ever reach SQL as bind values in a static query. Requests to "return everyone" end up in `unsupported`, so they return nothing.
 
@@ -39,5 +40,5 @@ Needs Node 24, Docker and `GEMINI_API_KEY` (in your environment or `.env.local`)
 ## With another week
 - An eval set of a few hundred briefs, with the prompt tuned against it in CI.
 - "Did you mean" suggestions for unsupported parts ("Portland" → nearest city we have).
-- Negations ("never at a startup") and OR groups in the filter schema.
+- OR groups across kinds ("Go or Rust") in the filter schema.
 - Usage metering and a real checkout link, plus rate limits per recruiter.

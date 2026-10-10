@@ -1193,7 +1193,27 @@
  },
  {
   "brief": "Kubernetes engineers in Austin who have never worked at a startup",
-  "expected_ids": []
+  "expected_ids": [
+   "cand_0254",
+   "cand_0289",
+   "cand_0540",
+   "cand_1096",
+   "cand_1394",
+   "cand_1433",
+   "cand_1438",
+   "cand_1763",
+   "cand_1823",
+   "cand_1882",
+   "cand_2187",
+   "cand_2248",
+   "cand_2255",
+   "cand_2701",
+   "cand_3655",
+   "cand_3712",
+   "cand_3883",
+   "cand_3946",
+   "cand_4104"
+  ]
  },
  {
   "brief": "data scientists with a PhD in Statistics",

@@ -6,6 +6,9 @@ import type { Filters } from "@/lib/filters";
 import { CITIES, COMPANIES, DEGREES, FIELDS, ROLES, SCHOOLS, SENIORITY, SKILLS } from "@/lib/vocab";
 import { Button } from "./ui";
 
+// these kinds must all hold; every other repeated kind is "any of"
+const ALL_OF = new Set<Kind>(["skills", "excluded_skills", "excluded_companies"]);
+
 const LISTS: Partial<Record<Kind, readonly string[]>> = {
   roles: ROLES,
   seniority: SENIORITY,
@@ -17,6 +20,8 @@ const LISTS: Partial<Record<Kind, readonly string[]>> = {
   schools: SCHOOLS,
   degrees: DEGREES,
   fields: FIELDS,
+  excluded_skills: SKILLS,
+  excluded_companies: COMPANIES,
 };
 
 export function FilterBar({
@@ -43,7 +48,7 @@ export function FilterBar({
         {chips.map((c, i) => (
           <li key={`${c.kind}:${c.value ?? ""}`} className="flex items-center gap-x-1.5">
             {/* values of one kind are alternatives, except required skills */}
-            {i > 0 && chips[i - 1].kind === c.kind && c.kind !== "skills" && <span className="text-[13px] text-muted">or</span>}
+            {i > 0 && chips[i - 1].kind === c.kind && !ALL_OF.has(c.kind) && <span className="text-[13px] text-muted">or</span>}
             <Mark chip={c} readOnly={readOnly || busy} onEdit={() => setEditing(c.kind)} onRemove={() => apply(removeChip(filters, c))} />
           </li>
         ))}
@@ -158,7 +163,7 @@ function Editor({ kind, filters, onApply, onCancel }: { kind: Kind; filters: Fil
       />
     );
   } else {
-    const key = kind as "worked_at_company_type" | "current_company_type";
+    const key = kind as "worked_at_company_type" | "current_company_type" | "never_worked_at_company_type";
     body = (
       <Choice
         options={[

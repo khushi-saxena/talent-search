@@ -29,6 +29,10 @@ export type Filters = {
   max_years: number | null;
   worked_at_company_type: string | null;
   current_company_type: string | null;
+  // negations: must not have / never worked at
+  excluded_skills: string[];
+  excluded_companies: string[];
+  never_worked_at_company_type: string | null;
   // parts of the brief the data can't answer
   unsupported: string[];
 };
@@ -44,7 +48,14 @@ export const LIST_KEYS = [
   "schools",
   "degrees",
   "fields",
+  "excluded_skills",
+  "excluded_companies",
 ] as const;
+
+// values here can only narrow results, so an unknown one is a no-op, not a reason to return nobody
+const DROP_UNKNOWN = new Set<string>(["nice_to_have_skills", "excluded_skills", "excluded_companies"]);
+
+const COMPANY_TYPE_KEYS = ["worked_at_company_type", "current_company_type", "never_worked_at_company_type"] as const;
 
 export const VOCAB: Record<(typeof LIST_KEYS)[number], readonly string[]> = {
   roles: ROLES,
@@ -57,6 +68,8 @@ export const VOCAB: Record<(typeof LIST_KEYS)[number], readonly string[]> = {
   schools: SCHOOLS,
   degrees: DEGREES,
   fields: FIELDS,
+  excluded_skills: SKILLS,
+  excluded_companies: COMPANIES,
 };
 
 export const emptyFilters = (): Filters => ({
@@ -75,6 +88,9 @@ export const emptyFilters = (): Filters => ({
   max_years: null,
   worked_at_company_type: null,
   current_company_type: null,
+  excluded_skills: [],
+  excluded_companies: [],
+  never_worked_at_company_type: null,
   unsupported: [],
 });
 
@@ -86,6 +102,7 @@ const loose = z
     max_years: z.number().nullish(),
     worked_at_company_type: z.string().nullish(),
     current_company_type: z.string().nullish(),
+    never_worked_at_company_type: z.string().nullish(),
     unsupported: z.array(z.string()).max(20).optional(),
   })
   .partial();
@@ -115,19 +132,20 @@ export function normalizeFilters(input: unknown): Filters {
       if (c) {
         if (!f[key].includes(c)) f[key].push(c);
       } else if (v.trim()) {
-        // a nice-to-have that doesn't exist can't hurt, just drop it
-        if (key !== "nice_to_have_skills") unsupported.add(v.trim().slice(0, 80));
+        if (!DROP_UNKNOWN.has(key)) unsupported.add(v.trim().slice(0, 80));
       }
     }
   }
   // a required skill doesn't also need to be a nice-to-have
   f.nice_to_have_skills = f.nice_to_have_skills.filter((s) => !f.skills.includes(s));
+  // "knows X but not X" can't match anyone; keep the requirement, drop the contradiction
+  f.excluded_skills = f.excluded_skills.filter((s) => !f.skills.includes(s));
 
   f.open_to_work = typeof raw.open_to_work === "boolean" ? raw.open_to_work : null;
   f.min_years = years(raw.min_years as number | null);
   f.max_years = years(raw.max_years as number | null);
 
-  for (const key of ["worked_at_company_type", "current_company_type"] as const) {
+  for (const key of COMPANY_TYPE_KEYS) {
     const v = raw[key] as string | null | undefined;
     if (v) {
       const c = canon(COMPANY_TYPES, v);
@@ -147,7 +165,6 @@ export function hasConstraints(f: Filters) {
     f.open_to_work !== null ||
     f.min_years !== null ||
     f.max_years !== null ||
-    f.worked_at_company_type !== null ||
-    f.current_company_type !== null
+    COMPANY_TYPE_KEYS.some((k) => f[k] !== null)
   );
 }
