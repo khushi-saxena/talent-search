@@ -154,6 +154,35 @@ function callModel(brief: string) {
 
 export let lastUsage: { prompt?: number; output?: number } = {};
 
+// Words that name each role. The model sometimes adds a role the brief never
+// asked for ("React engineers" -> Frontend Engineer), which drops half the
+// right people, so roles are checked against the brief in code.
+const ROLE_WORDS: Record<string, RegExp> = {
+  "Frontend Engineer": /front[\s-]?end|\bui engineer/,
+  "Full Stack Engineer": /full[\s-]?stack/,
+  "Backend Engineer": /back[\s-]?end|server[\s-]side/,
+  "Mobile Engineer": /mobile|\bios\b|android/,
+  "Data Engineer": /data engineer|data eng\b|\betl\b/,
+  "Data Scientist": /data scien/,
+  "Machine Learning Engineer": /machine learning|\bml\b|\bai engineer|\bai\/ml/,
+  "DevOps Engineer": /devops|dev ops|\bsres?\b|site reliab|infra|platform eng/,
+  "Product Designer": /design|\bux\b/,
+  "Product Manager": /product manag|\bpms?\b|product lead/,
+  "Account Executive": /account exec|\baes?\b|sales/,
+  "Marketing Manager": /market/,
+  Recruiter: /recrui|talent/,
+};
+
+export function guardRoles(brief: string, f: Filters): Filters {
+  if (!f.roles.length) return f;
+  const text = brief.toLowerCase();
+  const named = f.roles.filter((r) => ROLE_WORDS[r]?.test(text));
+  if (named.length) return { ...f, roles: named };
+  // no role named: with a skill it's "React engineers" (skill, not role);
+  // without one it's plain "engineers" or a typo, so trust the model
+  return f.skills.length ? { ...f, roles: [] } : f;
+}
+
 // Same brief, same filters: skips the model on repeats.
 const cache = new Map<string, Filters>();
 
@@ -170,7 +199,7 @@ export async function briefToFilters(brief: string): Promise<{ filters: Filters;
   } catch {
     throw new Error("model returned invalid JSON");
   }
-  const filters = normalizeFilters(parsed);
+  const filters = guardRoles(brief, normalizeFilters(parsed));
 
   if (cache.size > 500) cache.delete(cache.keys().next().value!);
   cache.set(key, filters);
