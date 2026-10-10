@@ -73,7 +73,7 @@ Rules:
 - Seniority words map literally: junior/entry-level/new grad -> junior, mid-level -> mid, senior -> senior, staff/principal/lead -> staff. Do not translate seniority into years, or years into seniority.
 - "N+ years" -> min_years N. "more than N years" -> min_years N+1. "less than N years" -> max_years N-1.
 - "worked at a startup" -> worked_at_company_type startup. "currently at a startup" -> current_company_type startup.
-- Negations the data can answer go in the negative fields: "never worked at a startup"/"only enterprise experience" -> never_worked_at_company_type startup; "doesn't know Java"/"without Java"/"no Java" -> excluded_skills; "never worked at Globalcorp"/"not from Globalcorp" -> excluded_companies.
+- Negations the data can answer go in the negative fields: "never worked at a startup"/"only enterprise experience" -> never_worked_at_company_type startup; "doesn't know Java"/"without Java"/"no Java" -> excluded_skills; "never worked at Globalcorp"/"not from Globalcorp" -> excluded_companies. If the excluded skill or company isn't in the lists, nobody has it, so the exclusion is already true for everyone: leave it out entirely, never put it in unsupported.
 - "studied at"/"went to" a school -> schools. "with a PhD"/"master's"/"MBA" -> degrees (master's means MS). A subject they studied -> fields.
 - "open to work", "looking for a job", "available" -> open_to_work true.
 - A US state means every allowed city in that state. "Bay Area" -> San Francisco.
@@ -89,6 +89,7 @@ Examples (fields left empty or null are omitted here):
 - "recruiters in California" -> {"roles":["Recruiter"],"cities":["Los Angeles","San Francisco"]}
 - "account executives with 5+ years, ideally with Salesforce" -> {"roles":["Account Executive"],"min_years":5,"nice_to_have_skills":["Salesforce"]}
 - "experienced Python developers who have never worked at a startup" -> {"skills":["Python"],"never_worked_at_company_type":"startup"}
+- "people with Scala and Spark but no Hadoop" -> {"skills":["Scala","Spark"]}
 - "product managers who speak Japanese" -> {"roles":["Product Manager"],"unsupported":["speaks Japanese"]}
 - "backend engineers in Portland" -> {"roles":["Backend Engineer"],"unsupported":["Portland"]}
 - "top talent" -> {"unsupported":["too vague"]}`;
