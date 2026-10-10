@@ -17,6 +17,7 @@ Needs Node 24, Docker and `GEMINI_API_KEY` (in your environment or `.env.local`)
 ## Keeping the model honest
 - The data can't answer everything (languages, remote, a city we don't have). The model has to list those parts under `unsupported`, and then **we return nobody** and show the recruiter which part we couldn't search on, with a one-click remove. A brief that's only praise ("great engineers") gets the same treatment.
 - Negations the data can answer are real filters, not unsupported: "never worked at a startup", "doesn't know Java", "never at Globalcorp". An excluded value that isn't in the data is a no-op, so it can't empty the results.
+- The model sometimes adds a role nobody asked for ("React engineers" → Frontend Engineer, which loses the full-stack half). So after the model answers, `guardRoles` keeps a role only if the brief names it; a skill-only brief keeps no role. Code, not a prompt, so it can't drift.
 - The prompt is literal: no added filters, seniority words map to seniority (not years), and "React engineers" is a skill, not a role. In the example set, treating it as a role misses 15 of the 21 right people.
 - Hostile briefs: the brief is wrapped as data, the output is forced to the schema and re-validated, and filters only ever reach SQL as bind values in a static query. Requests to "return everyone" end up in `unsupported`, so they return nothing.
 
@@ -29,7 +30,7 @@ Needs Node 24, Docker and `GEMINI_API_KEY` (in your environment or `.env.local`)
 `gemini-3.5-flash-lite`, structured JSON output, temperature 0, minimal thinking. Turning a brief into filters is classification over a small, fixed vocabulary, so the fastest tier is enough, and it keeps a search well under the 3-second budget. Measured on the example briefs: ~770 input and ~150 output tokens, about **$0.0006 per search** at $0.30 / $2.50 per million, and ~1.2s typical latency. A few calls stall past 4s, so if the model hasn't answered in 2s a second identical request goes out and the first answer wins. That costs one extra call on slow searches and caps the tail near 3s. Repeated briefs are served from an in-memory cache. Override with `GEMINI_MODEL`.
 
 ## Results
-`make eval`: 10/10 example briefs exactly right (100% precision and recall). On 20 harder briefs I wrote (synonyms, states, years, vague, unanswerable, injection): 20/20 exactly right. Average model time ~1.4s, ~770 tokens in and ~150 out.
+`make eval`: 48/48 briefs exactly right (100% precision and recall): the 10 examples, plus 38 I wrote covering synonyms, typos, states, year ranges, negations, nice-to-haves, vague, unanswerable and injection briefs. Average model time ~1.4s.
 
 ## Tradeoffs
 - Hard filters only, so the result is either exactly right or empty. That's good for precision on structured data, but a near-miss (9 years when asked for 10+) is never shown.
