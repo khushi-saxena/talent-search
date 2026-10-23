@@ -1,4 +1,4 @@
-# Rotto recruiter search
+# talent-search
 
 ```
 make setup   # deps, local Supabase, migrations, 5,000 candidates, two recruiter logins
